@@ -1,5 +1,7 @@
 # 公共・政治経済特訓（完全オフライン・完全無料）
 
+[![iOS Build](https://github.com/chicktack0321/seikei_tokkun/actions/workflows/ios-build.yml/badge.svg)](https://github.com/chicktack0321/seikei_tokkun/actions/workflows/ios-build.yml)
+
 大学入学共通テスト「公共，政治・経済」のための4択演習アプリ。
 iOS 17+ / SwiftUI / SwiftData / XcodeGen / 通信ゼロ。
 
@@ -15,6 +17,7 @@ iOS 17+ / SwiftUI / SwiftData / XcodeGen / 通信ゼロ。
 ## 現在の状態
 
 - 収録問題数: **264問**（4分野 / 23単元）
+- CI: ユニットテスト78件・UIテスト1件が通過（ビルドはGitHub ActionsのmacOSランナーで検証）
 - 画面: ホーム・演習・問題一覧・履歴の4タブ
 - 学習の記録は端末内（SwiftData）にのみ保存され、外部への送信は行わない
 
