@@ -177,16 +177,17 @@ final class StudyScopeTests: XCTestCase {
     }
 
     func testCountsByField() {
+        insert("SEI_SEINEN_0001", midCategory: .adolescence, difficulty: .basic)
         insert("SEI_MINSHU_0001", midCategory: .democracy, difficulty: .basic)
-        insert("SEI_TOCHI_0001", midCategory: .government, difficulty: .basic)
         insert("SEI_KINYU_0001", midCategory: .finance, difficulty: .basic)
         insert("SEI_ZAISEI_0001", midCategory: .publicFinance, difficulty: .basic)
 
         let counts = QuestionRepository(context: context).countsByField()
 
-        XCTAssertEqual(counts[.politics], 1)
         XCTAssertEqual(counts[.civics], 1)
+        XCTAssertEqual(counts[.politics], 1)
         XCTAssertEqual(counts[.economics], 2)
+        XCTAssertNil(counts[.international], "問題が無い分野は数えない")
     }
 
     func testCountByDifficulty() {

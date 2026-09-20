@@ -50,12 +50,12 @@ final class MasteryBreakdownTests: XCTestCase {
 
     func testKeyCombinesMidCategoryAndDifficulty() {
         let question = makeQuestion("SEI_KINYU_0001", midCategory: .finance, difficulty: .advanced)
-        XCTAssertEqual(MasteryBreakdown.key(for: question), "SEC|3")
+        XCTAssertEqual(MasteryBreakdown.key(for: question), "KINYU|3")
     }
 
     /// 中分類で絞れる
     func testCountFiltersByMidCategory() {
-        let breakdown = ["SEC|1": 3, "SEC|2": 5, "NW|2": 7]
+        let breakdown = ["KINYU|1": 3, "KINYU|2": 5, "ZAISEI|2": 7]
 
         var scope = StudyScope.default
         scope.midCategory = .finance
@@ -66,16 +66,16 @@ final class MasteryBreakdownTests: XCTestCase {
     /// 分野で絞ると、その分野に属する中分類が合算される。
     /// 分野をキーに焼いていると中分類での絞り込みが後から作れないため、中分類で持って集計側で束ねる。
     func testCountFiltersByField() {
-        let breakdown = ["SEC|2": 5, "NW|2": 7, "CORP|1": 3, "PROJMGT|2": 2]
+        let breakdown = ["KINYU|2": 5, "ZAISEI|2": 7, "MINSHU|1": 3, "TOCHI|2": 2]
 
         var scope = StudyScope.default
         scope.setField(.economics)
 
-        XCTAssertEqual(MasteryBreakdown.count(in: breakdown, scope: scope), 12, "SEC + NW")
+        XCTAssertEqual(MasteryBreakdown.count(in: breakdown, scope: scope), 12, "KINYU + ZAISEI")
     }
 
     func testCountFiltersByDifficulty() {
-        let breakdown = ["SEC|1": 3, "SEC|3": 5, "NW|3": 7]
+        let breakdown = ["KINYU|1": 3, "KINYU|3": 5, "ZAISEI|3": 7]
 
         var scope = StudyScope.default
         scope.difficulty = .advanced
@@ -84,24 +84,24 @@ final class MasteryBreakdownTests: XCTestCase {
     }
 
     func testCountCombinesFieldAndDifficulty() {
-        let breakdown = ["SEC|1": 3, "SEC|3": 5, "NW|3": 7, "CORP|3": 11]
+        let breakdown = ["KINYU|1": 3, "KINYU|3": 5, "ZAISEI|3": 7, "MINSHU|3": 11]
 
         var scope = StudyScope.default
         scope.setField(.economics)
         scope.difficulty = .advanced
 
-        XCTAssertEqual(MasteryBreakdown.count(in: breakdown, scope: scope), 12, "CORPは分野違いで除外")
+        XCTAssertEqual(MasteryBreakdown.count(in: breakdown, scope: scope), 12, "MINSHUは分野違いで除外")
     }
 
     /// 保存データが壊れていても落ちない（未知の中分類・不正な形式は無視する）
     func testCountIgnoresMalformedKeys() {
-        let breakdown = ["SEC|2": 5, "壊れたキー": 100, "XXX|2": 50, "SEC": 30]
+        let breakdown = ["KINYU|2": 5, "壊れたキー": 100, "XXX|2": 50, "KINYU": 30]
 
         XCTAssertEqual(MasteryBreakdown.count(in: breakdown, scope: .default), 5)
     }
 
     func testSnapshotUsesTotalWhenScopeIsDefault() {
-        let snapshot = MasterySnapshot(total: 42, breakdown: ["SEC|2": 5])
+        let snapshot = MasterySnapshot(total: 42, breakdown: ["KINYU|2": 5])
         // 既定の範囲では内訳を足さずに合計をそのまま使う（内訳が無い古い記録でも数が出る）
         XCTAssertEqual(snapshot.count(scope: .default), 42)
     }
@@ -109,7 +109,7 @@ final class MasteryBreakdownTests: XCTestCase {
     func testSnapshotCountsByField() {
         let snapshot = MasterySnapshot(
             total: 20,
-            breakdown: ["SEC|2": 5, "NW|1": 3, "CORP|2": 7, "AUDIT|3": 5]
+            breakdown: ["KINYU|2": 5, "ZAISEI|1": 3, "MINSHU|2": 7, "SEINEN|3": 5]
         )
 
         let byField = snapshot.countsByField()
@@ -138,7 +138,7 @@ final class MasteryBreakdownTests: XCTestCase {
         let snapshot = repository.masteredSnapshot()
 
         XCTAssertEqual(snapshot.total, 1, "マスターに残っている問題だけを数える")
-        XCTAssertEqual(snapshot.breakdown, ["SEC|2": 1])
+        XCTAssertEqual(snapshot.breakdown, ["KINYU|2": 1])
     }
 
     /// 解答のたびに全問走査しないよう、増減ぶんだけを足し引きしていること
@@ -153,13 +153,13 @@ final class MasteryBreakdownTests: XCTestCase {
 
         let log = repository.todayLog()
         XCTAssertEqual(log?.masteredQuestionCount, 1)
-        XCTAssertEqual(log?.masteredBreakdown["SEC|2"], 1)
+        XCTAssertEqual(log?.masteredBreakdown["KINYU|2"], 1)
 
         // 間違えると習得済みから外れ、内訳からもセルごと消える
         repository.recordAnswer(question: question, isCorrect: false)
 
         XCTAssertEqual(log?.masteredQuestionCount, 0)
-        XCTAssertNil(log?.masteredBreakdown["SEC|2"], "0になったセルは残さない")
+        XCTAssertNil(log?.masteredBreakdown["KINYU|2"], "0になったセルは残さない")
     }
 
     func testRecordAnswerAccumulatesDailyTotals() {

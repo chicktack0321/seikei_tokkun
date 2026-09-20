@@ -98,6 +98,11 @@ final class SeijiKeizaiAppUITests: XCTestCase {
         }
 
         // 2問目はわざと間違える。不正解のときだけ出る「選んだ選択肢の解説」はこのアプリの要。
+        // 「各選択肢の解説」を開くとボタンが画面外へ押し出されるため、必要なら送ってから押す。
+        if !nextButton.isHittable {
+            app.swipeUp()
+            settle()
+        }
         XCTAssertTrue(nextButton.isHittable, "「次の問題へ」を押せない")
         nextButton.tap()
         settle()
