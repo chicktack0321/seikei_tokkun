@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>ja_JP</string>
+	<!-- ホーム画面のアイコン下に出る名前。iOSは全角8〜9文字程度で切り詰めるため、
+	     収まる長さにしている -->
+	<key>CFBundleDisplayName</key>
+	<string>政経公共特訓</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<!-- 完全オフライン・通信ゼロで独自の暗号化も行わないため輸出規制の対象外。
+	     宣言しておかないとTestFlight配信のたびに輸出コンプライアンスの手動回答を求められる -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<!-- SwiftUI App lifecycle: Storyboard不要。空dictで自動生成のランチ画面を使う -->
+	<key>UILaunchScreen</key>
+	<dict/>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+	</dict>
+	<!-- 聞き流し機能を持たないため UIBackgroundModes は宣言しない。
+	     使わないバックグラウンドモードを残すと審査で用途を問われる -->
+	<!-- iOS 17以降の対応端末はすべてarm64。armv7(32bit)を指定すると
+	     deployment targetと矛盾し、App Store Connectの検証で弾かれる -->
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>arm64</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+</dict>
+</plist>

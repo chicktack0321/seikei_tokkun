@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  プライバシーマニフェスト。
+
+  App Store へ提出するアプリは、Apple が「Required Reason API」に指定した API を使う場合、
+  その利用理由をここで宣言しなければならない。宣言が無いと審査で指摘される。
+
+  本アプリは通信を一切行わず、学習履歴も端末内の SwiftData にのみ保存する。
+  外部へ送るデータが無いため、収集データ・トラッキングはいずれも空で正しい。
+  該当するのは UserDefaults だけ（出題範囲の設定・音のオンオフ・シードの適用済みバージョンなど、
+  いずれもこのアプリ自身の設定を読み書きするために使っている）。
+-->
+<plist version="1.0">
+<dict>
+	<!-- 他社サービスとの名寄せ・広告目的の追跡は行わない -->
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+
+	<!-- 収集して外部へ送るデータは無い（通信自体を行わない） -->
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<!-- CA92.1: このアプリ自身の情報の読み書きにのみ使用する -->
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

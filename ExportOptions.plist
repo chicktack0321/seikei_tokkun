@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- App Store Connect（TestFlight含む）向けの書き出し -->
+	<key>method</key>
+	<string>app-store-connect</string>
+	<!-- 書き出したipaをその場でApp Store Connectへ送る。
+	     altool を別途呼ばずに済み、認証情報の受け渡しも1か所にまとまる -->
+	<key>destination</key>
+	<string>upload</string>
+	<key>teamID</key>
+	<string>5PT8D8SKN8</string>
+	<key>signingStyle</key>
+	<string>automatic</string>
+	<!-- クラッシュログを実際のコード行に対応付けるためdSYMを一緒に送る -->
+	<key>uploadSymbols</key>
+	<true/>
+	<!-- ビルド番号はワークフロー側で明示的に渡すため、Xcodeに書き換えさせない -->
+	<key>manageAppVersionAndBuildNumber</key>
+	<false/>
+</dict>
+</plist>

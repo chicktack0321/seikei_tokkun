@@ -1,0 +1,21 @@
+# XcodeGenで生成されるため、.xcodeprojはコミットしない（project.ymlが唯一の正）
+*.xcodeproj/
+*.xcworkspace/
+
+xcuserdata/
+DerivedData/
+.build/
+.swiftpm/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+*.xcresult/
+
+.DS_Store
+
+# App Store Connect APIキー。誤ってコミットすると配信権限がそのまま漏れる
+*.p8
+
+__pycache__/
+*.pyc

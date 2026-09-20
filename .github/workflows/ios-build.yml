@@ -1,0 +1,133 @@
+name: iOS Build
+
+on:
+  # ドキュメントだけの変更ではビルドを回さない。
+  # 問題データ（data/questions/*.json）はJSONなので、ここでは除外されず必ず検証される。
+  push:
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+  pull_request:
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+  workflow_dispatch:
+
+jobs:
+  # 問題データの検証はXcodeを必要としないので、無料のUbuntuランナーで先に回す。
+  # macOSランナーは分単価が高い（privateリポジトリでは10倍消費される）ため、
+  # シードの形式ミスでmacOSジョブを丸ごと無駄にしないよう手前で落とす。
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # 正本（data/questions/）の検証
+      - name: Validate source data
+        run: python scripts/build_seed.py --check
+
+      # 同梱シード（アプリが実際に読むファイル）の検証
+      - name: Validate bundled seed
+        run: python scripts/validate_seed.py
+
+      # 正本を編集したのに同梱シードを作り直し忘れると、変更が端末に届かないまま気づけない。
+      # 差分が出たら落とす。
+      - name: Ensure the bundled seed is up to date
+        run: |
+          python - <<'PY'
+          import json, subprocess, sys, pathlib
+          out = pathlib.Path("SeijiKeizaiApp/Resources/question_master_seed.json")
+          before = json.loads(out.read_text(encoding="utf-8"))
+          subprocess.check_call([sys.executable, "scripts/build_seed.py"])
+          after = json.loads(out.read_text(encoding="utf-8"))
+          # version は生成のたびに上がるので比較から外す
+          before.pop("version", None)
+          after.pop("version", None)
+          if before != after:
+              raise SystemExit(
+                  "data/questions/ の内容と同梱の question_master_seed.json が食い違っています。"
+                  "`python scripts/build_seed.py` を実行して結果をコミットしてください。"
+              )
+          print("同梱シードは最新です")
+          PY
+
+  build:
+    # Mac実機がないため、GitHub提供のmacOSランナー上でXcodeビルド・テストを検証する
+    needs: seed
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Install XcodeGen and xcparse
+        run: |
+          brew install xcodegen
+          brew install chargepoint/xcparse/xcparse
+
+      - name: Generate Xcode project from project.yml
+        run: xcodegen generate
+
+      - name: Pick an available iOS Simulator
+        id: sim
+        run: |
+          UDID=$(python3 -c "
+          import json, re, subprocess
+          data = json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', 'devices', 'available', '-j']))
+          best = None
+          for runtime, devices in data['devices'].items():
+              m = re.search(r'iOS-(\d+)-(\d+)', runtime)
+              if not m:
+                  continue
+              version = (int(m.group(1)), int(m.group(2)))
+              for d in devices:
+                  if not d['name'].startswith('iPhone') or 'SE' in d['name']:
+                      continue
+                  if best is None or version > best[0]:
+                      best = (version, d['udid'], d['name'])
+          if not best:
+              raise SystemExit('No available iPhone simulator found')
+          print(best[1])
+          ")
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      - name: Build and run tests (captures screenshots)
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project SeijiKeizaiApp.xcodeproj \
+            -scheme SeijiKeizaiApp \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Extract screenshots from test results
+        if: always()
+        run: |
+          mkdir -p screenshots
+          xcparse screenshots TestResults.xcresult screenshots || true
+          ls -la screenshots
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-screenshots
+          path: screenshots
+          if-no-files-found: warn
+
+      - name: Upload raw .xcresult (for debugging)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-xcresult
+          path: TestResults.xcresult
+          if-no-files-found: ignore
