@@ -25,7 +25,7 @@ import json
 import sys
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "SeijiKeizaiApp/Resources/Assets.xcassets"
@@ -38,19 +38,36 @@ DEFAULT_SOURCE = ROOT / "docs/assets/app-icon-source.png"
 
 SIZE = 1024
 
-# 配色。政治・経済の題材に合わせた深い藍から紫みの藍へのグラデーション。
-# 姉妹アプリ（英単語＝青、古文＝紺紫、ITパスポート）と並べたときに区別が付く色味にしている。
-TOP_COLOR = (20, 52, 96)      # 濃い藍
-BOTTOM_COLOR = (18, 96, 104)  # 青緑
-GLYPH_COLOR = (247, 246, 240)  # 生成り
-GLYPH = "政"
+# 配色。緑のグラデーションに白と山吹の字を重ねる（参考画像に合わせた配色）。
+# 姉妹アプリ（英単語＝橙、古文＝紺紫、ITパスポート＝青）と並べたときに区別が付く色味にしている。
+TOP_COLOR = (18, 62, 20)       # 深い緑
+BOTTOM_COLOR = (16, 168, 104)  # 明るい緑
+WHITE = (250, 250, 248)
+YELLOW = (250, 209, 112)
+# 影は背景より暗い緑。黒を敷くと緑が濁って見える
+SHADOW_COLOR = (12, 46, 16)
 
-# ゴシック体を使う。制度・時事を扱う科目なので、明朝より硬すぎない字面にする。
+SIZE = 1024
+
+# 3行の内容。(文字列, 色, 中心のy, 占める高さ, 占める幅) はいずれも辺の長さに対する比。
+# 1024px で作って端末側が縮小するため、比で持たせておけば解像度を変えても崩れない。
+LINES = [
+    ("政経", WHITE, 0.185, 0.29, 0.66),
+    ("特訓", YELLOW, 0.565, 0.40, 0.80),
+    ("大学受験", WHITE, 0.875, 0.145, 0.68),
+]
+
+# 影の落とし方（辺の長さに対する比）
+SHADOW_OFFSET = 0.014
+SHADOW_BLUR = 0.006
+
+# 太いゴシック体を使う。細い書体だと縮小したときに字が潰れて読めなくなる。
 FONT_CANDIDATES = [
-    "C:/Windows/Fonts/YuGothB.ttc",   # 游ゴシック Bold
-    "C:/Windows/Fonts/meiryob.ttc",   # メイリオ Bold
-    "C:/Windows/Fonts/YuGothM.ttc",
-    "/System/Library/Fonts/ヒラギノ角ゴシック W6.ttc",
+    "C:/Windows/Fonts/HGRSGU.TTC",       # HG創英角ゴシックUB
+    "C:/Windows/Fonts/BIZ-UDGothicB.ttc",
+    "C:/Windows/Fonts/YuGothB.ttc",
+    "C:/Windows/Fonts/meiryob.ttc",
+    "/System/Library/Fonts/ヒラギノ角ゴシック W8.ttc",
 ]
 
 
@@ -63,6 +80,22 @@ def load_font(size: int) -> ImageFont.FreeTypeFont:
     )
 
 
+def fit_font(draw: ImageDraw.ImageDraw, text: str, max_width: float, max_height: float) -> ImageFont.FreeTypeFont:
+    """指定した枠に収まる最大の字サイズを求める。
+
+    字数が行ごとに違う（「政経」2字と「大学受験」4字）ので、同じ字サイズを使うと
+    行の見た目の大きさが揃わない。行ごとに枠を決めて、そこへ入る大きさを探す。
+    """
+    size = int(max_height)
+    while size > 8:
+        font = load_font(size)
+        box = draw.textbbox((0, 0), text, font=font)
+        if (box[2] - box[0]) <= max_width and (box[3] - box[1]) <= max_height:
+            return font
+        size -= 2
+    return load_font(8)
+
+
 def draw_icon() -> Image.Image:
     im = Image.new("RGB", (SIZE, SIZE), TOP_COLOR)
     draw = ImageDraw.Draw(im)
@@ -73,12 +106,27 @@ def draw_icon() -> Image.Image:
         color = tuple(round(TOP_COLOR[i] + (BOTTOM_COLOR[i] - TOP_COLOR[i]) * t) for i in range(3))
         draw.line([(0, y), (SIZE, y)], fill=color)
 
-    # 字は角丸マスクの内側に収める。マスクで削られる四隅に字が寄ると欠けて見える。
-    font = load_font(int(SIZE * 0.60))
-    bbox = draw.textbbox((0, 0), GLYPH, font=font)
-    x = (SIZE - (bbox[2] - bbox[0])) / 2 - bbox[0]
-    y = (SIZE - (bbox[3] - bbox[1])) / 2 - bbox[1]
-    draw.text((x, y), GLYPH, font=font, fill=GLYPH_COLOR)
+    # 影は別レイヤーに描いてぼかしてから重ねる。本体と同じレイヤーに描くと、
+    # ぼかしが字そのものにかかって輪郭が甘くなる。
+    shadow = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    shadow_draw = ImageDraw.Draw(shadow)
+    offset = SIZE * SHADOW_OFFSET
+
+    placements = []
+    for text, color, center_y, height_ratio, width_ratio in LINES:
+        font = fit_font(draw, text, SIZE * width_ratio, SIZE * height_ratio)
+        box = draw.textbbox((0, 0), text, font=font)
+        x = (SIZE - (box[2] - box[0])) / 2 - box[0]
+        y = SIZE * center_y - (box[3] - box[1]) / 2 - box[1]
+        placements.append((text, font, x, y, color))
+        shadow_draw.text((x + offset, y + offset), text, font=font, fill=SHADOW_COLOR + (200,))
+
+    shadow = shadow.filter(ImageFilter.GaussianBlur(SIZE * SHADOW_BLUR))
+    im = Image.alpha_composite(im.convert("RGBA"), shadow).convert("RGB")
+
+    draw = ImageDraw.Draw(im)
+    for text, font, x, y, color in placements:
+        draw.text((x, y), text, font=font, fill=color)
 
     return im
 
