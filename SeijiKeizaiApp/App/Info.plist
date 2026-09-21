@@ -7,7 +7,7 @@
 	<!-- ホーム画面のアイコン下に出る名前。iOSは全角8〜9文字程度で切り詰めるため、
 	     収まる長さにしている -->
 	<key>CFBundleDisplayName</key>
-	<string>政経公共特訓</string>
+	<string>政経特訓</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
